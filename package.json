@@ -15,6 +15,7 @@
     "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"web-dev-server\""
   },
   "dependencies": {
+    "@vaadin/grid": "^24.6.2",
     "@vaadin/router": "^2.0.0",
     "chart.js": "^4.4.7",
     "lit": "^3.1.4"

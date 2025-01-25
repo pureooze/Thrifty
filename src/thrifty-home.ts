@@ -1,11 +1,15 @@
-import { LitElement, html, css, nothing } from 'lit';
+import '@vaadin/grid';
+import '@vaadin/grid/vaadin-grid-sort-column.js';
+import '@vaadin/grid/vaadin-grid-filter-column.js';
+import './dashboard-chart.js';
+import { LitElement, html, css } from 'lit';
 import { property, customElement } from 'lit/decorators.js';
+
 import { Transaction } from './types/transaction.js';
 import TransactionService from './services/transaction-service.js';
 import { sharedStyles } from './shared-styles.js';
 import { Category } from './types/category.js';
 import { TransactionAggregate } from './types/transaction-aggregate.js';
-import './dashboard-chart.js';
 
 @customElement('thrifty-home')
 export class ThriftyHome extends LitElement {
@@ -53,6 +57,12 @@ export class ThriftyHome extends LitElement {
 	}
 
 	render() {
+		const tableData = Object.entries(this.aggregates).map(([category, amount]) => ({
+			Category: category,
+			Amount: amount,
+			Percent: this.totalSpent > 0 ? ((amount as number) / this.totalSpent) * 100 : 0
+		}));
+
 		return html`
 			<h1>Dashboard</h1>
 
@@ -65,46 +75,29 @@ export class ThriftyHome extends LitElement {
 				.aggregates=${this.aggregates}
 			></thrifty-dashboard-chart>
 			<h3>Expenses By Categories</h3>
-			${this._getTransactionSummary()}
+
+			${this._renderTable()}
 		`;
 	}
 
-	_getTransactionSummary() {
-		if (!this.transactions) {
-			return nothing;
-		}
-
-		if (this.transactions.length === 0) {
-			return html`
-				<p>No transactions found.</p>
-			`;
-		}
+	private _renderTable() {
+		const gridData = Object.entries(this.aggregates).map(([category, amount]) => ({
+			category: category as keyof TransactionAggregate, // Strongly typed "category"
+			amount,
+			percent: this.totalSpent > 0 ? ((amount / this.totalSpent) * 100).toFixed(2) : '0.00',
+		}));
 
 		return html`
-			<table>
-				<thead>
-				<tr>
-					<th>Category</th>
-					<th>Amount</th>
-					<th>Percent</th>
-				</tr>
-				</thead>
-				<tbody>
-				${
-					Object.entries(this.aggregates).map(([category, amount]) => {
-						const percent = this.totalSpent > 0 ? ((amount as number) / this.totalSpent) * 100 : 0;
+			<vaadin-grid .items=${gridData}>
+				<!-- Category Column -->
+				<vaadin-grid-sort-column path="category" header="Category"></vaadin-grid-sort-column>
 
-						return html`
-							<tr>
-								<td>${category}</td> <!-- Convert enum key to string -->
-								<td>${amount}</td>
-								<td>${percent.toFixed(2)}%</td>
-							</tr>
-						`;
-					})
-				}
-				</tbody>
-			</table>
+				<!-- Amount Column -->
+				<vaadin-grid-sort-column path="amount" header="Amount"></vaadin-grid-sort-column>
+
+				<!-- Percentage Column -->
+				<vaadin-grid-sort-column path="percent" header="Percent (%)"></vaadin-grid-sort-column>
+			</vaadin-grid>
 		`;
 	}
 }
